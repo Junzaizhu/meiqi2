@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>燃气一张图监管系统</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#0FC6C2',
+            success: '#00B42A',
+            warning: '#FF7D00',
+            danger: '#F53F3F',
+            dark: '#1D2129',
+            'dark-2': '#4E5969',
+            'light-1': '#F2F3F5',
+            'light-2': '#E5E6EB',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义样式 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .sidebar-item-active {
+        @apply bg-primary/10 text-primary border-l-4 border-primary;
+      }
+      .card-hover {
+        @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+      }
+      .gradient-bg {
+        background: linear-gradient(135deg, #165DFF 0%, #0FC6C2 100%);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 font-sans text-dark overflow-hidden h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-md z-10">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <!-- 系统标题 -->
+        <div class="flex items-center space-x-3">
+          <div class="text-primary text-2xl">
+            <i class="fa fa-fire"></i>
+          </div>
+          <h1 class="text-xl font-bold text-dark">燃气一张图监管系统</h1>
+        </div>
+        
+        <!-- 右侧工具栏（已移除管理员和铃铛提醒） -->
+        <div class="flex items-center">
+          <!-- 空内容，保持布局结构 -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex flex-1 overflow-hidden">
+    <!-- 侧边栏导航 -->
+    <aside class="w-64 bg-white shadow-md flex-shrink-0 overflow-y-auto" id="sidebar">
+      <nav class="p-4">
+        <ul class="space-y-1">
+          <!-- 总览子图 -->
+          <li>
+            <div class="sidebar-item group flex items-center px-4 py-3 text-dark-2 rounded-lg cursor-pointer transition-all" data-target="overview">
+              <i class="fa fa-dashboard w-5 text-center mr-3"></i>
+              <span>总览子图</span>
+              <i class="fa fa-angle-right ml-auto transition-transform group-hover:rotate-90"></i>
+            </div>
+            <ul class="pl-10 mt-1 mb-2 hidden" id="overview-sub">
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="comprehensive-supervision">综合监管模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="smart-monitoring">智慧监测模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="overview-map">地理信息图模块</a></li>
+            </ul>
+          </li>
+          
+          <!-- 风险隐患子图 -->
+          <li>
+            <div class="sidebar-item group flex items-center px-4 py-3 text-dark-2 rounded-lg cursor-pointer transition-all" data-target="risk">
+              <i class="fa fa-exclamation-triangle w-5 text-center mr-3"></i>
+              <span>风险隐患子图</span>
+              <i class="fa fa-angle-right ml-auto transition-transform group-hover:rotate-90"></i>
+            </div>
+            <ul class="pl-10 mt-1 mb-2 hidden" id="risk-sub">
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="risk-module">风险模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="hidden-danger">隐患模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="risk-map">地理信息图模块</a></li>
+            </ul>
+          </li>
+          
+          <!-- 运行监测子图 -->
+          <li>
+            <div class="sidebar-item group flex items-center px-4 py-3 text-dark-2 rounded-lg cursor-pointer transition-all" data-target="operation">
+              <i class="fa fa-line-chart w-5 text-center mr-3"></i>
+              <span>运行监测子图</span>
+              <i class="fa fa-angle-right ml-auto transition-transform group-hover:rotate-90"></i>
+            </div>
+            <ul class="pl-10 mt-1 mb-2 hidden" id="operation-sub">
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="alarm-monitoring">报警监测模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="alarm-disposal">报警处置模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="operation-map">地理信息图模块</a></li>
+            </ul>
+          </li>
+          
+          <!-- 老旧管网子图 -->
+          <li>
+            <div class="sidebar-item group flex items-center px-4 py-3 text-dark-2 rounded-lg cursor-pointer transition-all" data-target="old-pipeline">
+              <i class="fa fa-pipe w-5 text-center mr-3"></i>
+              <span>老旧管网子图</span>
+              <i class="fa fa-angle-right ml-auto transition-transform group-hover:rotate-90"></i>
+            </div>
+            <ul class="pl-10 mt-1 mb-2 hidden" id="old-pipeline-sub">
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="status-assessment">现状评估模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="aging-transformation">老化改造模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="pipeline-map">地理信息图模块</a></li>
+            </ul>
+          </li>
+          
+          <!-- 基础设施子图 -->
+          <li>
+            <div class="sidebar-item group flex items-center px-4 py-3 text-dark-2 rounded-lg cursor-pointer transition-all" data-target="infrastructure">
+              <i class="fa fa-building w-5 text-center mr-3"></i>
+              <span>基础设施子图</span>
+              <i class="fa fa-angle-right ml-auto transition-transform group-hover:rotate-90"></i>
+            </div>
+            <ul class="pl-10 mt-1 mb-2 hidden" id="infrastructure-sub">
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="basic-info">基础信息模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="gas-supply">天然气供应信息模块</a></li>
+              <li><a href="#" class="block py-2 text-sm text-dark-2 hover:text-primary" data-module="project-management">项目信息管理模块</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- 主内容展示区 -->
+    <div class="flex-1 overflow-y-auto bg-gray-50 p-6" id="content-area">
+      <!-- 默认显示总览 -->
+      <div class="module-content active" id="overview-content">
+        <div class="mb-6">
+          <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-2">总览子图</h2>
+          <p class="text-dark-2">综合展示燃气系统运行状态、风险隐患及基础设施等关键信息</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-primary">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-dark-2 text-sm mb-1">风险隐患总数</p>
+                <h3 class="text-2xl font-bold">147</h3>
+                <p class="text-success text-sm mt-2"><i class="fa fa-arrow-down mr-1"></i> 较昨日下降 3.2%</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <i class="fa fa-exclamation-circle text-xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-warning">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-dark-2 text-sm mb-1">今日报警次数</p>
+                <h3 class="text-2xl font-bold">23</h3>
+                <p class="text-danger text-sm mt-2"><i class="fa fa-arrow-up mr-1"></i> 较昨日上升 5.7%</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                <i class="fa fa-bell text-xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-success">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-dark-2 text-sm mb-1">已整改隐患</p>
+                <h3 class="text-2xl font-bold">98</h3>
+                <p class="text-success text-sm mt-2"><i class="fa fa-arrow-up mr-1"></i> 较昨日上升 8.3%</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success">
+                <i class="fa fa-check-circle text-xl"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-secondary">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-dark-2 text-sm mb-1">老旧管网改造</p>
+                <h3 class="text-2xl font-bold">47.8%</h3>
+                <p class="text-success text-sm mt-2"><i class="fa fa-arrow-up mr-1"></i> 本周进度 2.1%</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                <i class="fa fa-wrench text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 地图和图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- 主地图 -->
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-4 card-hover">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-lg">全市燃气监测点分布</h3>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1 text-sm bg-light-1 rounded-lg hover:bg-light-2 transition-colors">
+                  <i class="fa fa-filter mr-1"></i> 筛选
+                </button>
+                <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                  <i class="fa fa-refresh mr-1"></i> 刷新
+                </button>
+              </div>
+            </div>
+            <div class="relative h-[400px] bg-gray-100 rounded-lg overflow-hidden">
+              <img src="https://picsum.photos/id/1015/1000/800" alt="燃气监测地图" class="w-full h-full object-cover opacity-70">
+              <!-- 地图覆盖层 -->
+              <div class="absolute inset-0 p-4">
+                <!-- 模拟地图标记点 -->
+                <div class="absolute top-1/4 left-1/3 animate-pulse">
+                  <div class="w-4 h-4 bg-danger rounded-full border-2 border-white"></div>
+                  <div class="w-4 h-4 bg-danger/30 rounded-full animate-ping absolute -top-2 -left-2"></div>
+                </div>
+                <div class="absolute top-1/2 left-2/3 animate-pulse">
+                  <div class="w-4 h-4 bg-warning rounded-full border-2 border-white"></div>
+                  <div class="w-4 h-4 bg-warning/30 rounded-full animate-ping absolute -top-2 -left-2"></div>
+                </div>
+                <div class="absolute bottom-1/4 right-1/4 animate-pulse">
+                  <div class="w-4 h-4 bg-success rounded-full border-2 border-white"></div>
+                  <div class="w-4 h-4 bg-success/30 rounded-full animate-ping absolute -top-2 -left-2"></div>
+                </div>
+              </div>
+              
+              <!-- 地图图例 -->
+              <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-md text-sm">
+                <div class="flex items-center mb-2">
+                  <div class="w-3 h-3 bg-danger rounded-full mr-2"></div>
+                  <span>高风险区域</span>
+                </div>
+                <div class="flex items-center mb-2">
+                  <div class="w-3 h-3 bg-warning rounded-full mr-2"></div>
+                  <span>中风险区域</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-success rounded-full mr-2"></div>
+                  <span>低风险区域</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 报警统计图表 -->
+          <div class="bg-white rounded-xl shadow-sm p-4 card-hover">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-lg">报警类型分布</h3>
+              <div class="text-sm text-dark-2">
+                <select class="bg-light-1 border-none rounded p-1 focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option>近7天</option>
+                  <option>近30天</option>
+                  <option>本年度</option>
+                </select>
+              </div>
+            </div>
+            <div class="h-[400px] flex items-center justify-center">
+              <canvas id="alarmTypeChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 最近事件列表 -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm p-4 card-hover">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-lg">最近风险事件</h3>
+            <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-b border-light-2">
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">事件类型</th>
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">位置</th>
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">等级</th>
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">发生时间</th>
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">状态</th>
+                  <th class="py-3 px-4 text-left text-sm font-medium text-dark-2">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-light-2 hover:bg-light-1/50 transition-colors">
+                  <td class="py-3 px-4 text-sm">管道泄漏报警</td>
+                  <td class="py-3 px-4 text-sm">东城区和平路123号</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-danger/10 text-danger rounded-full text-xs">重大</span></td>
+                  <td class="py-3 px-4 text-sm">2023-06-15 08:32</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-success/10 text-success rounded-full text-xs">已处理</span></td>
+                  <td class="py-3 px-4 text-sm"><a href="#" class="text-primary hover:underline">详情</a></td>
+                </tr>
+                <tr class="border-b border-light-2 hover:bg-light-1/50 transition-colors">
+                  <td class="py-3 px-4 text-sm">压力异常</td>
+                  <td class="py-3 px-4 text-sm">西城区复兴门大街</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-warning/10 text-warning rounded-full text-xs">较大</span></td>
+                  <td class="py-3 px-4 text-sm">2023-06-15 10:15</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-warning/10 text-warning rounded-full text-xs">处理中</span></td>
+                  <td class="py-3 px-4 text-sm"><a href="#" class="text-primary hover:underline">详情</a></td>
+                </tr>
+                <tr class="border-b border-light-2 hover:bg-light-1/50 transition-colors">
+                  <td class="py-3 px-4 text-sm">老旧管网隐患</td>
+                  <td class="py-3 px-4 text-sm">朝阳区建国路88号</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-warning/10 text-warning rounded-full text-xs">较大</span></td>
+                  <td class="py-3 px-4 text-sm">2023-06-14 16:47</td>
+                  <td class="py-3 px-4 text-sm"><span class="px-2 py-1 bg-dark-2/10 text-dark-2 rounded-full text-xs">待处理</span></td>
+                  <td class="py-3 px-4 text-sm"><a href="#" class="text-primary hover:underline">详情</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 其他模块内容（默认隐藏） -->
+      <div class="module-content hidden" id="comprehensive-supervision-content">
+        <div class="mb-6">
+          <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-2">综合监管模块</h2>
+          <p class="text-dark-2">动态接入燃气风险隐患、事件、巡查巡检、老旧管网改造等关键信息</p>
+        </div>
+        
+        <!-- 综合监管内容 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 card-hover">
+            <h3 class="font-semibold text-lg mb-4">风险隐患与事件统计</h3>
+            <div class="h-[300px]">
+              <canvas id="riskEventChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+            <h3 class="font-semibold text-lg mb-4">管网改造进度</h3>
+            <div class="h-[300px]">
+              <canvas id="pipelineRenovationChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 其他模块内容将通过JavaScript动态生成 -->
+    </div>
+  </main>
+
+  <!-- JavaScript -->
+  <script>
+    // 添加返回总览按钮的函数
+    function addBackToOverviewButton(moduleContent) {
+      // 检查是否已添加过按钮，避免重复添加
+      if (!moduleContent.querySelector('.back-to-overview')) {
+        const backButton = document.createElement('button');
+        backButton.className = 'back-to-overview mb-6 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center';
+        backButton.innerHTML = '<i class="fa fa-arrow-left mr-2"></i> 返回总览';
+        
+        // 点击按钮返回总览
+        backButton.addEventListener('click', function() {
+          document.querySelectorAll('.module-content').forEach(content => {
+            content.classList.add('hidden');
+          });
+          document.getElementById('overview-content').classList.remove('hidden');
+          
+          // 同步更新侧边栏状态
+          document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('sidebar-item-active');
+          });
+          document.querySelector('[data-target="overview"]').classList.add('sidebar-item-active');
+        });
+        
+        // 将按钮添加到模块顶部
+        moduleContent.insertBefore(backButton, moduleContent.firstChild);
+      }
+    }
+    
+    // 侧边栏折叠/展开功能
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // 移除其他所有项的active状态
+        document.querySelectorAll('.sidebar-item').forEach(i => {
+          i.classList.remove('sidebar-item-active');
+        });
+        
+        // 为当前项添加active状态
+        this.classList.add('sidebar-item-active');
+        
+        // 切换子菜单显示/隐藏
+        const target = this.getAttribute('data-target');
+        const subMenu = document.getElementById(`${target}-sub`);
+        
+        // 关闭其他所有子菜单
+        document.querySelectorAll('[id$="-sub"]').forEach(menu => {
+          if (menu.id !== `${target}-sub`) {
+            menu.classList.add('hidden');
+          }
+        });
+        
+        // 切换当前子菜单
+        subMenu.classList.toggle('hidden');
+        
+        // 如果点击的是总览子图，显示总览内容
+        if (target === 'overview') {
+          document.querySelectorAll('.module-content').forEach(content => {
+            content.classList.add('hidden');
+          });
+          document.getElementById('overview-content').classList.remove('hidden');
+        }
+      });
+    });
+    
+    // 默认激活第一个菜单项
+    document.querySelector('.sidebar-item').click();
+    
+    // 模块点击事件
+    document.querySelectorAll('[data-module]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // 获取模块名称
+        const module = this.getAttribute('data-module');
+        
+        // 隐藏所有模块内容
+        document.querySelectorAll('.module-content').forEach(content => {
+          content.classList.add('hidden');
+        });
+        
+        // 显示特定模块内容，如果不存在则创建
+        let moduleContent = document.getElementById(`${module}-content`);
+        if (!moduleContent) {
+          // 创建新模块内容
+          moduleContent = document.createElement('div');
+          moduleContent.id = `${module}-content`;
+          moduleContent.className = 'module-content';
+          
+          // 获取模块显示名称和描述
+          const moduleName = this.textContent.trim();
+          let moduleDesc = '';
+          
+          // 根据模块设置描述信息
+          switch(module) {
+            case 'smart-monitoring':
+              moduleDesc = '动态接入全市燃气管线、燃气厂站相关报警数据，监测设备数据，接入燃气厂站相关监控视频。支持以图形的形式展示关键指标信息。';
+              break;
+            case 'overview-map':
+              moduleDesc = '与智慧监测及综合监管模块进行信息联动，展示全市全市燃气监测报警的具体位置、详细信息，支持图层筛选功能。';
+              break;
+            case 'risk-module':
+              moduleDesc = '动态接入接入全市风险评估信息，主要包括风险（低风险、一般风险、较大风险、重大风险）分布统计、风险管控数据。';
+              break;
+            case 'hidden-danger':
+              moduleDesc = '动态接入全市隐患排查相关信息，主要包括隐患整改数量、隐患整改进度等。';
+              break;
+            case 'risk-map':
+              moduleDesc = '与风险模块及隐患模块进行信息联动，展示全市燃气风险四色图、隐患分布图以及重大风险隐患具体位置、详细信息。';
+              break;
+            case 'alarm-monitoring':
+              moduleDesc = '动态接入全市燃气监测报警相关数据，主要包括各燃气设施报警、燃气用户报警的数量及分布信息';
+              break;
+            case 'alarm-disposal':
+              moduleDesc = '动态接入全市燃气报警处置相关数据，主要包括报警类型、处置状态、处置时间等信息';
+              break;
+            case 'operation-map':
+              moduleDesc = '与报警监测与报警处置模块进行信息联动，展示全市可燃气体监测、流量监测、压力监测等报警信息以及监测设备的位置及详细报警信息';
+              break;
+            case 'status-assessment':
+              moduleDesc = '动态接入全市燃气管线老化评估数据，评估类型主要包括符合安全运行要求、落实安全管控措施可继续运行、限期整改、立即改造等';
+              break;
+            case 'aging-transformation':
+              moduleDesc = '动态接入全市燃气管道老化改造项目信息，主要包括老旧管网改造计划及改造进度。';
+              break;
+            case 'pipeline-map':
+              moduleDesc = '与现状评估模块与老化改造模块进行信息联动，展示全市老旧管网分布位置及详细信息，支持图层筛选功能。';
+              break;
+            case 'basic-info':
+              moduleDesc = '动态接入全市天然气场站、燃气管网、管道燃气用户、液化气场站、瓶装液化气用户等基础信息。';
+              break;
+            case 'gas-supply':
+              moduleDesc = '动态接入全市天然气年度度累计供应量、合同量情况，支持以图形的形式展示天然气供应情况等关键指标。';
+              break;
+            case 'project-management':
+              moduleDesc = '动态接入全市市年度重点项目、五年规划项目数据，支持以图形的形式展示项目情况。';
+              break;
+            default:
+              moduleDesc = '加载中...';
+          }
+          
+          // 设置模块内容
+          moduleContent.innerHTML = `
+            <div class="mb-6">
+              <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark mb-2">${moduleName}</h2>
+              <p class="text-dark-2">${moduleDesc}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
+              <div class="flex items-center justify-center h-64">
+                <div class="text-center">
+                  <i class="fa fa-area-chart text-5xl text-primary/30 mb-4"></i>
+                  <p class="text-dark-2">${moduleName}数据加载中</p>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // 添加到内容区
+          document.getElementById('content-area').appendChild(moduleContent);
+        }
+        
+        // 添加返回总览按钮
+        addBackToOverviewButton(moduleContent);
+        
+        // 显示模块内容
+        moduleContent.classList.remove('hidden');
+      });
+    });
+    
+    // 为综合监管模块添加返回按钮
+    const comprehensiveContent = document.getElementById('comprehensive-supervision-content');
+    if (comprehensiveContent) {
+      addBackToOverviewButton(comprehensiveContent);
+    }
+    
+    // 初始化图表
+    window.addEventListener('load', function() {
+      // 报警类型分布图表
+      const alarmTypeCtx = document.getElementById('alarmTypeChart').getContext('2d');
+      new Chart(alarmTypeCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['管道泄漏', '压力异常', '流量异常', '设备故障', '其他'],
+          datasets: [{
+            data: [35, 25, 15, 18, 7],
+            backgroundColor: [
+              '#F53F3F', // 红色 - 危险
+              '#FF7D00', // 橙色 - 警告
+              '#FFAA00', // 黄色
+              '#00B42A', // 绿色 - 成功
+              '#86909C'  // 灰色
+            ],
+            borderWidth: 0,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                boxWidth: 12
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+      
+      // 风险事件统计图表
+      const riskEventCtx = document.getElementById('riskEventChart')?.getContext('2d');
+      if (riskEventCtx) {
+        new Chart(riskEventCtx, {
+          type: 'bar',
+          data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+            datasets: [
+              {
+                label: '风险事件',
+                data: [12, 19, 15, 23, 18, 25],
+                backgroundColor: '#165DFF',
+                borderRadius: 4
+              },
+              {
+                label: '已处理',
+                data: [10, 15, 14, 20, 16, 22],
+                backgroundColor: '#00B42A',
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+      
+      // 管网改造进度图表
+      const pipelineRenovationCtx = document.getElementById('pipelineRenovationChart')?.getContext('2d');
+      if (pipelineRenovationCtx) {
+        new Chart(pipelineRenovationCtx, {
+          type: 'line',
+          data: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+            datasets: [{
+              label: '改造进度(%)',
+              data: [5, 12, 18, 27, 38, 47.8],
+              fill: true,
+              backgroundColor: 'rgba(15, 198, 194, 0.1)',
+              borderColor: '#0FC6C2',
+              tension: 0.4,
+              pointBackgroundColor: '#0FC6C2'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                  callback: function(value) {
+                    return value + '%';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
